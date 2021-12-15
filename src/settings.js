@@ -4,9 +4,9 @@ import constate from "constate";
 export function useSettings() {
 
   const [settings,setState] = useState({
-    network  : 'granadanet',
-    endpoint : 'https://granadanet.smartpy.io',
-    contract : 'KT1WxUiPL1kG8pRUerL52H3qkbHjXpwnoDHo',
+    network  : 'hangzhounet',
+    endpoint : 'https://rpc.hangzhounet.teztnets.xyz',
+    contract : 'KT1T9G1q8z42N27nQYURAqNRq86XzMyU6UEK',
     show     : false,
   });
 

@@ -30,34 +30,35 @@ const Cell = (props) => {
   </Typography></Grid>)
 }
 
-const OwnershipData = (props) => {
+const address = "KT1NNh22LhAuzEvsWnd596qmSbwbVWUDk41X"
+const tokenid = 0
+const amount = 10
+const sell_price = 1
+
+const SellButton = () => {
+
+  const tezos = useTezos();
+  const account = useAccountPkh();
   const { settings } = useSettingsContext();
-  const [{ assetid, owner, forsale }, setData] = useState(() => ({
-      assetid : "",
-      owner   : "",
-      forsale : "",
-    }));
-  const loadStorage = React.useCallback(async () => {
-    const tezos     = new TezosToolkit(settings.endpoint);
-    const contract  = await tezos.contract.at(settings.contract);
-    const storage   = await contract.storage();
-    console.log(storage);
-    setData({
-      assetid : storage.assetid,
-      owner   : storage.owner,
-      forsale : storage._state.toNumber() > 0 ? "For Sale" : "Not For Sale",
-    });
-  }, [assetid, owner, forsale]);
-  if (assetid === "") loadStorage();
+  const { setInfoSnack, setErrorSnack, hideSnack } = useSnackContext();
+  const bid = async () => {
+    try {
+      const contract  = await tezos.wallet.at(settings.contract);
+      const operation = await contract.methods.list_nft(tokenid, address, sell_price).send();
+      const shorthash = operation.opHash.substring(0, 10) + "...";
+      setInfoSnack(`waiting for ${ shorthash } to be confirmed ...`);
+      await operation.receipt();
+      hideSnack();
+    } catch (error) {
+      console.log(error)
+      setErrorSnack(error.message);
+      setTimeout(hideSnack, 4000);
+    }
+  }
   return (
-    <Container maxWidth='xs'>
-    <Grid container direction="row" alignItems="center" spacing={1}>
-      <Cell val="Asset Id"/><Cell val={ assetid.substring(0, 20) + "..." } data/>
-      <Cell val="Owner"   /><Cell val={ owner.substring(0, 20) + "..." } data/>
-      <Cell val="Status"  /><Cell val={ forsale }/>
-    </Grid>
-    </Container>
-  );
+    <Button onClick={ bid } variant="outlined" disabled={ account === null }>
+      List NFT for sale
+    </Button>);
 }
 
 const BidButton = () => {
@@ -67,8 +68,8 @@ const BidButton = () => {
   const { setInfoSnack, setErrorSnack, hideSnack } = useSnackContext();
   const bid = async () => {
     try {
-      const contract  = await tezos.wallet.at(contract);
-      const operation = await contract.methods.bid(UnitValue).send({ amount: 10 });
+      const contract  = await tezos.wallet.at(settings.contract);
+      const operation = await contract.methods.bid(tokenid, address, 1).send({ amount: amount });
       const shorthash = operation.opHash.substring(0, 10) + "...";
       setInfoSnack(`waiting for ${ shorthash } to be confirmed ...`);
       await operation.receipt();
@@ -92,7 +93,7 @@ const ClaimButton = () => {
   const claim = async () => {
     try {
       const contract  = await tezos.wallet.at(settings.contract);
-      const operation = await contract.methods.claim(UnitValue).send();
+      const operation = await contract.methods.claim(tokenid, address).send();
       const shorthash = operation.opHash.substring(0, 10) + "...";
       setInfoSnack(`waiting for ${ shorthash } to be confirmed ...`);
       await operation.receipt();
@@ -129,7 +130,7 @@ function App() {
         <Container style={{ marginTop: 50 }}>
           <Grid container spacing={3}>
             <Grid item xs={12}>
-                <OwnershipData />
+                <SellButton />
             </Grid>
             <Grid item xs={12}>
                 <BidButton />
