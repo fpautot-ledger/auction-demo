@@ -35,6 +35,40 @@ const tokenid = 0
 const amount = 10
 const sell_price = 1
 
+const UpdateOperator = () => {
+
+  const tezos = useTezos();
+  const account = useAccountPkh();
+  const { settings } = useSettingsContext();
+  const { setInfoSnack, setErrorSnack, hideSnack } = useSnackContext();
+  const bid = async () => {
+    try {
+      const contract  = await tezos.wallet.at(address);
+      const operation = await contract.methods.update_operators([
+        {
+          add_operator: {
+            owner: account,
+            operator: settings.contract,
+            token_id: tokenid,
+          },
+        },
+      ]).send();
+      const shorthash = operation.opHash.substring(0, 10) + "...";
+      setInfoSnack(`waiting for ${ shorthash } to be confirmed ...`);
+      await operation.receipt();
+      hideSnack();
+    } catch (error) {
+      console.log(error)
+      setErrorSnack(error.message);
+      setTimeout(hideSnack, 4000);
+    }
+  }
+  return (
+    <Button onClick={ bid } variant="outlined" disabled={ account === null }>
+      Prerequisite: update operator
+    </Button>);
+}
+
 const SellButton = () => {
 
   const tezos = useTezos();
@@ -129,6 +163,9 @@ function App() {
       <div className="App">
         <Container style={{ marginTop: 50 }}>
           <Grid container spacing={3}>
+            <Grid item xs={12}>
+                <UpdateOperator />
+            </Grid>
             <Grid item xs={12}>
                 <SellButton />
             </Grid>
